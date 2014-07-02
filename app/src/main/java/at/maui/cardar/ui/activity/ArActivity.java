@@ -3,7 +3,6 @@ package at.maui.cardar.ui.activity;
 import android.app.Activity;
 import android.content.Context;
 import android.os.Bundle;
-import android.os.PersistableBundle;
 import android.os.Vibrator;
 
 import com.google.vrtoolkit.cardboard.CardboardActivity;
