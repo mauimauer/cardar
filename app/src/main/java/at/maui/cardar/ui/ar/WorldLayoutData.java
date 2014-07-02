@@ -214,10 +214,10 @@ public final class WorldLayoutData {
     };
 
     public static final float[] WALL_COORDS = new float[] {
-            53f, -30f, 0,
-            -53f, -30f, 0,
-            53f, 30f, 0,
-            -53f, 30f, 0
+            83f, -60f, 0,
+            -83f, -60f, 0,
+            83f, 60f, 0,
+            -83f, 60f, 0
     };
 
     public static final float[] WALL_NORMALS = new float[] {

@@ -69,7 +69,9 @@ public class Renderer implements CardboardView.StereoRenderer {
     private float[] mModelFloor;
     private float[] mModelWall;
     private float[] mModelViewProjection;
+    private float[] mModelViewProjectionWall;
     private float[] mModelView;
+    private float[] mModelViewWall;
 
     private int[] mTextures;
 
@@ -108,7 +110,9 @@ public class Renderer implements CardboardView.StereoRenderer {
         mModelWall = new float[16];
 
         mModelViewProjection = new float[16];
+        mModelViewProjectionWall = new float[16];
         mModelView = new float[16];
+        mModelViewWall = new float[16];
 
         float[] vtmp = { 1.0f, -1.0f, -1.0f, -1.0f, 1.0f, 1.0f, -1.0f, 1.0f };
         float[] ttmp = { 1.0f, 1.0f, 0.0f, 1.0f, 1.0f, 0.0f, 0.0f, 0.0f };
@@ -195,11 +199,12 @@ public class Renderer implements CardboardView.StereoRenderer {
         Matrix.multiplyMM(mModelViewProjection, 0, eyeTransform.getPerspective(), 0, mModelView, 0);
         drawCube();
 
+
         //Matrix.multiplyMM(mModelView, 0, mView, 0, mModelWall, 0);
-        Matrix.setIdentityM(mModelView, 0);
-        Matrix.translateM(mModelView, 0, 0, 0, -82f);
-        Matrix.multiplyMM(mModelViewProjection, 0, eyeTransform.getPerspective(), 0,
-                mModelView, 0);
+        Matrix.setIdentityM(mModelViewWall, 0);
+        Matrix.translateM(mModelViewWall, 0, 0, -5f, -78f);
+        Matrix.multiplyMM(mModelViewProjectionWall, 0, eyeTransform.getPerspective(), 0,
+                mModelViewWall, 0);
         drawWall();
 
         // Set mModelView for the floor, so we draw floor in the correct location
@@ -248,17 +253,17 @@ public class Renderer implements CardboardView.StereoRenderer {
         GLES20.glUniform1f(mIsFloorParam, 0.3f);
 
         // Set the Model in the shader, used to calculate lighting
-        GLES20.glUniformMatrix4fv(mModelParam, 1, false, mModelWall, 0);
+        GLES20.glUniformMatrix4fv(mModelParam, 1, false, mModelViewWall, 0);
 
         // Set the ModelView in the shader, used to calculate lighting
-        GLES20.glUniformMatrix4fv(mModelViewParam, 1, false, mModelView, 0);
+        GLES20.glUniformMatrix4fv(mModelViewParam, 1, false, mModelViewWall, 0);
 
         // Set the position of the cube
         GLES20.glVertexAttribPointer(mPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
                 false, 0, mWallVertices);
 
         // Set the ModelViewProjection matrix in the shader.
-        GLES20.glUniformMatrix4fv(mModelViewProjectionParam, 1, false, mModelViewProjection, 0);
+        GLES20.glUniformMatrix4fv(mModelViewProjectionParam, 1, false, mModelViewProjectionWall, 0);
 
         // Set the normal positions of the cube, again for shading
         GLES20.glVertexAttribPointer(mNormalParam, 3, GLES20.GL_FLOAT,
