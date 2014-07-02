@@ -1,4 +1,8 @@
+#extension GL_OES_EGL_image_external : require
 precision mediump float;
+uniform samplerExternalOES v_Texture;
+varying vec2 texCoord;
+
 varying vec4 v_Color;
 varying vec3 v_Grid;
 varying float v_isFloor;
@@ -13,6 +17,8 @@ void main() {
         } else {
             gl_FragColor = v_Color;
         }
+    } else if(v_isFloor > 0.2) {
+        gl_FragColor = texture2D(v_Texture, texCoord);
     } else {
         gl_FragColor = v_Color;
     }

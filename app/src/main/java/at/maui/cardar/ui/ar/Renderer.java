@@ -51,6 +51,10 @@ public class Renderer implements CardboardView.StereoRenderer {
     private FloatBuffer mFloorColors;
     private FloatBuffer mFloorNormals;
 
+    private FloatBuffer mWallVertices;
+    private FloatBuffer mWallColors;
+    private FloatBuffer mWallNormals;
+
     private FloatBuffer mCubeVertices;
     private FloatBuffer mCubeColors;
     private FloatBuffer mCubeFoundColors;
@@ -63,6 +67,7 @@ public class Renderer implements CardboardView.StereoRenderer {
     private float[] mModelCube;
     private float[] mCamera;
     private float[] mModelFloor;
+    private float[] mModelWall;
     private float[] mModelViewProjection;
     private float[] mModelView;
 
@@ -100,6 +105,8 @@ public class Renderer implements CardboardView.StereoRenderer {
 
         mModelCube = new float[16];
         mModelFloor = new float[16];
+        mModelWall = new float[16];
+
         mModelViewProjection = new float[16];
         mModelView = new float[16];
 
@@ -116,8 +123,12 @@ public class Renderer implements CardboardView.StereoRenderer {
     @Override
     public void onNewFrame(HeadTransform headTransform) {
 
+        // Build the Model part of the ModelView matrix.
+        Matrix.rotateM(mModelCube, 0, TIME_DELTA, 0.5f, 0.5f, 1.0f);
+
         // Build the camera matrix and apply it to the ModelView.
         Matrix.setLookAtM(mCamera, 0, 0.0f, 0.0f, CAMERA_Z, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f);
+
         headTransform.getHeadView(mHeadView, 0);
 
         mRealCameraTexture.updateTexImage();
@@ -132,7 +143,7 @@ public class Renderer implements CardboardView.StereoRenderer {
         // Apply the eye transformation to the camera.
         Matrix.multiplyMM(mView, 0, eyeTransform.getEyeView(), 0, mCamera, 0);
 
-        GLES20.glUseProgram(mGlPrograms[0]);
+        /*GLES20.glUseProgram(mGlPrograms[0]);
 
         mPositionParam = GLES20.glGetAttribLocation(mGlPrograms[0], "vPosition");
         mTextureCoordParam = GLES20.glGetAttribLocation(mGlPrograms[0], "vTexCoord");
@@ -150,10 +161,12 @@ public class Renderer implements CardboardView.StereoRenderer {
         GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
         GLES20.glFlush();
 
-        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);
+        GLES20.glClear(GLES20.GL_DEPTH_BUFFER_BIT);*/
 
         GLES20.glUseProgram(mGlPrograms[1]);
 
+        mTextureParam = GLES20.glGetAttribLocation(mGlPrograms[1], "v_Texture");
+        mTextureCoordParam = GLES20.glGetAttribLocation(mGlPrograms[1], "v_TextCoord");
         mModelViewProjectionParam = GLES20.glGetUniformLocation(mGlPrograms[1], "u_MVP");
         mLightPosParam = GLES20.glGetUniformLocation(mGlPrograms[1], "u_LightPos");
         mModelViewParam = GLES20.glGetUniformLocation(mGlPrograms[1], "u_MVMatrix");
@@ -162,6 +175,9 @@ public class Renderer implements CardboardView.StereoRenderer {
         mPositionParam = GLES20.glGetAttribLocation(mGlPrograms[1], "a_Position");
         mNormalParam = GLES20.glGetAttribLocation(mGlPrograms[1], "a_Normal");
         mColorParam = GLES20.glGetAttribLocation(mGlPrograms[1], "a_Color");
+
+        GLES20.glVertexAttribPointer(mTextureCoordParam, 2, GLES20.GL_FLOAT, false, 4*2, pTexCoord );
+        GLES20.glEnableVertexAttribArray(mTextureCoordParam);
 
         GLES20.glEnableVertexAttribArray(mPositionParam);
         GLES20.glEnableVertexAttribArray(mNormalParam);
@@ -179,12 +195,21 @@ public class Renderer implements CardboardView.StereoRenderer {
         Matrix.multiplyMM(mModelViewProjection, 0, eyeTransform.getPerspective(), 0, mModelView, 0);
         drawCube();
 
+        //Matrix.multiplyMM(mModelView, 0, mView, 0, mModelWall, 0);
+        Matrix.setIdentityM(mModelView, 0);
+        Matrix.translateM(mModelView, 0, 0, 0, -82f);
+        Matrix.multiplyMM(mModelViewProjection, 0, eyeTransform.getPerspective(), 0,
+                mModelView, 0);
+        drawWall();
+
         // Set mModelView for the floor, so we draw floor in the correct location
         Matrix.multiplyMM(mModelView, 0, mView, 0, mModelFloor, 0);
         Matrix.multiplyMM(mModelViewProjection, 0, eyeTransform.getPerspective(), 0,
                 mModelView, 0);
         drawFloor(eyeTransform.getPerspective());
+
     }
+
 
     public void drawCube() {
         // This is not the floor!
@@ -216,6 +241,39 @@ public class Renderer implements CardboardView.StereoRenderer {
         }
         GLES20.glDrawArrays(GLES20.GL_TRIANGLES, 0, 36);
         checkGLError("Drawing cube");
+    }
+
+    public void drawWall() {
+
+        GLES20.glUniform1f(mIsFloorParam, 0.3f);
+
+        // Set the Model in the shader, used to calculate lighting
+        GLES20.glUniformMatrix4fv(mModelParam, 1, false, mModelWall, 0);
+
+        // Set the ModelView in the shader, used to calculate lighting
+        GLES20.glUniformMatrix4fv(mModelViewParam, 1, false, mModelView, 0);
+
+        // Set the position of the cube
+        GLES20.glVertexAttribPointer(mPositionParam, COORDS_PER_VERTEX, GLES20.GL_FLOAT,
+                false, 0, mWallVertices);
+
+        // Set the ModelViewProjection matrix in the shader.
+        GLES20.glUniformMatrix4fv(mModelViewProjectionParam, 1, false, mModelViewProjection, 0);
+
+        // Set the normal positions of the cube, again for shading
+        GLES20.glVertexAttribPointer(mNormalParam, 3, GLES20.GL_FLOAT,
+                false, 0, mWallNormals);
+
+        GLES20.glVertexAttribPointer(mColorParam, 4, GLES20.GL_FLOAT, false,
+                0, mWallColors);
+
+        GLES20.glActiveTexture(GLES20.GL_TEXTURE0);
+        GLES20.glBindTexture(GLES11Ext.GL_TEXTURE_EXTERNAL_OES, mTextures[0]);
+        GLES20.glUniform1i(mTextureParam, 0);
+
+        GLES20.glDrawArrays(GLES20.GL_TRIANGLE_STRIP, 0, 4);
+
+        checkGLError("drawing wall");
     }
 
     public void drawFloor(float[] perspective) {
@@ -263,8 +321,6 @@ public class Renderer implements CardboardView.StereoRenderer {
 
         initRealWorldCamera();
 
-        initCameraTextureShader();
-
         initModels();
 
         initWorldShader();
@@ -277,6 +333,9 @@ public class Renderer implements CardboardView.StereoRenderer {
 
         Matrix.setIdentityM(mModelFloor, 0);
         Matrix.translateM(mModelFloor, 0, 0, -mFloorDepth, 0); // Floor appears below user
+
+        Matrix.setIdentityM(mModelWall, 0);
+        Matrix.translateM(mModelWall, 0, 0, 0, -16f);
 
         checkGLError("onSurfaceCreated");
     }
@@ -305,7 +364,7 @@ public class Renderer implements CardboardView.StereoRenderer {
         params.setPreviewFrameRate(fps);
 
         params.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_VIDEO);
-        params.setPreviewSize(1280,720);
+        params.setPreviewSize(1920,1080);
         mRealCamera.setParameters(params);
 
         mRealCameraTexture = new SurfaceTexture(mTextures[0]);
@@ -411,18 +470,25 @@ public class Renderer implements CardboardView.StereoRenderer {
         mFloorColors = bbFloorColors.asFloatBuffer();
         mFloorColors.put(DATA.FLOOR_COLORS);
         mFloorColors.position(0);
-    }
 
-    private int initCameraTextureShader() {
-        int vshader = GLUtils.loadGLShader(mContext, GLES20.GL_VERTEX_SHADER, R.raw.camera_vertex);
-        int fshader = GLUtils.loadGLShader(mContext, GLES20.GL_FRAGMENT_SHADER, R.raw.camera_fragment);
+        // make wall
+        ByteBuffer bbWallVertices = ByteBuffer.allocateDirect(DATA.WALL_COORDS.length * 4);
+        bbWallVertices.order(ByteOrder.nativeOrder());
+        mWallVertices = bbWallVertices.asFloatBuffer();
+        mWallVertices.put(DATA.WALL_COORDS);
+        mWallVertices.position(0);
 
-        mGlPrograms[0] = GLES20.glCreateProgram();
-        GLES20.glAttachShader(mGlPrograms[0] , vshader);
-        GLES20.glAttachShader(mGlPrograms[0] , fshader);
-        GLES20.glLinkProgram(mGlPrograms[0]);
+        ByteBuffer bbWallNormals = ByteBuffer.allocateDirect(DATA.WALL_NORMALS.length * 4);
+        bbWallNormals.order(ByteOrder.nativeOrder());
+        mWallNormals = bbWallNormals.asFloatBuffer();
+        mWallNormals.put(DATA.WALL_NORMALS);
+        mWallNormals.position(0);
 
-        return mGlPrograms[0];
+        ByteBuffer bbWallColors = ByteBuffer.allocateDirect(DATA.WALL_COLORS.length * 4);
+        bbWallColors.order(ByteOrder.nativeOrder());
+        mWallColors = bbWallColors.asFloatBuffer();
+        mWallColors.put(DATA.WALL_COLORS);
+        mWallColors.position(0);
     }
 
     private int initWorldShader() {

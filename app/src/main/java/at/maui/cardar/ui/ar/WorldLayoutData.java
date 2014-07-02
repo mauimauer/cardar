@@ -213,6 +213,27 @@ public final class WorldLayoutData {
             200f, 0, 200f,
     };
 
+    public static final float[] WALL_COORDS = new float[] {
+            53f, -30f, 0,
+            -53f, -30f, 0,
+            53f, 30f, 0,
+            -53f, 30f, 0
+    };
+
+    public static final float[] WALL_NORMALS = new float[] {
+            0.0f, 0.0f, -1.0f,
+            0.0f, 0.0f, -1.0f,
+            0.0f, 0.0f, -1.0f,
+            0.0f, 0.0f, -1.0f,
+    };
+
+    public static final float[] WALL_COLORS = new float[] {
+            0.3398f, 0.3398f, 0.9023f, 1.0f,
+            0.3398f, 0.3398f, 0.9023f, 1.0f,
+            0.3398f, 0.3398f, 0.9023f, 1.0f,
+            0.3398f, 0.3398f, 0.9023f, 1.0f,
+    };
+
     public static final float[] FLOOR_NORMALS = new float[] {
             0.0f, 1.0f, 0.0f,
             0.0f, 1.0f, 0.0f,

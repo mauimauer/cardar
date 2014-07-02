@@ -10,6 +10,9 @@ varying vec4 v_Color;
 varying vec3 v_Grid;
 varying float v_isFloor;
 
+attribute vec2 v_TextCoord;
+varying vec2 texCoord;
+
 void main()
 {
    vec3 modelVertex = vec3(u_Model * a_Position);
@@ -23,6 +26,6 @@ void main()
    diffuse = diffuse * (1.0 / (1.0 + (0.00001 * distance * distance)));
    v_Color = a_Color * diffuse;
    gl_Position = u_MVP * a_Position;
-
+   texCoord = v_TextCoord;
    v_isFloor = u_IsFloor;
 }
